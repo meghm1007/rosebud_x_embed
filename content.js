@@ -2,10 +2,181 @@
 document.addEventListener('DOMContentLoaded', initGameFrame);
 // Also try on window load in case DOMContentLoaded already fired
 window.addEventListener('load', initGameFrame);
+// Listen for URL changes on Twitter/X to detect when navigating to posts
+window.addEventListener('load', () => {
+  observeUrlChanges();
+  // Check current URL on initial load
+  checkForXPostAndExtractLinks();
+});
 
 // Track if frame has been created
 let frameCreated = false;
 let gameContainer = null;
+
+// Function to find and extract links from current X post
+function checkForXPostAndExtractLinks() {
+  const url = window.location.href;
+  // Check if current URL matches X post pattern (x.com/username/status/id)
+  if (url.match(/https?:\/\/(x|twitter)\.com\/[^\/]+\/status\/\d+/)) {
+    console.log('X Post detected:', url);
+    
+    // Wait for content to load
+    setTimeout(() => {
+      // Look for specific div using the selector
+      const targetDiv = document.querySelector('div.css-175oi2r.r-1kqtdi0.r-1867qdf.r-1phboty.r-rs99b7.r-18u37iz.r-1udh08x.r-o7ynqc.r-6416eg.r-1ny4l3l');
+      
+      if (targetDiv) {
+        // Find the <a> inside the div
+        const link = targetDiv.querySelector('a')?.href;
+
+        // Look for the <span> containing "rosebud.ai"
+        const spans = targetDiv.querySelectorAll('span');
+        let hasRosebud = false;
+
+        spans.forEach(span => {
+          if (span.innerText.includes('rosebud.ai')) {
+            hasRosebud = true;
+          }
+        });
+
+        // Logic
+        if (hasRosebud) {
+          console.log('rosebud game: ' + link);
+          
+          // If we found a rosebud game link, you might want to do something with it
+          // For example, update the iframe source or trigger game loading
+          if (link && gameContainer) {
+            const gameFrame = gameContainer.querySelector('iframe');
+            if (gameFrame) {
+              gameFrame.src = link;
+              
+              // Show the game container if it's hidden
+              gameContainer.style.display = 'flex';
+            }
+          }
+          
+        } else if (link) {
+          console.log('no rosebud game available');
+        } else {
+          console.log('no rosebud game available');
+        }
+      } else {
+        console.log('Main div not found.');
+        
+        // Also try the old method as a fallback
+        tryLegacyExtraction();
+      }
+    }, 1500); // Give time for the tweet to fully load
+  }
+}
+
+// Legacy method for extracting links
+function tryLegacyExtraction() {
+  // Look for tweet container
+  const tweetContainer = document.querySelector('[data-testid="tweet"]');
+  if (!tweetContainer) {
+    console.log('Tweet container not found yet, might still be loading');
+    return;
+  }
+  
+  // Find all links in the post
+  const links = tweetContainer.querySelectorAll('a[href]');
+  const externalLinks = [];
+  
+  // Process links
+  links.forEach(link => {
+    const href = link.getAttribute('href');
+    if (!href) return;
+    
+    // Get the full URL (handle relative links)
+    let fullUrl = href;
+    if (href.startsWith('/')) {
+      fullUrl = `https://x.com${href}`;
+    }
+    
+    // Check if the URL is an external link (not x.com or twitter.com internal paths)
+    const isXInternal = href.startsWith('/') || 
+                        href.includes('twitter.com/') || 
+                        href.includes('x.com/') ||
+                        href.includes('pic.twitter');
+    
+    // Filter out profile links, hashtags, and media
+    const isProfileOrHashtag = href.match(/\/(hashtag|[^\/]+)\/?(status)?$/);
+    
+    // Only include external links
+    if (!isXInternal && !isProfileOrHashtag) {
+      externalLinks.push(fullUrl);
+    } else if (href.includes('t.co/')) {
+      // Capture t.co links (Twitter's URL shortener)
+      console.log('Found t.co link:', href);
+      externalLinks.push(fullUrl);
+      
+      // Try to get the actual link that t.co redirects to
+      const linkText = link.textContent.trim();
+      if (linkText && !linkText.includes('t.co/')) {
+        console.log('  → Likely redirects to:', linkText);
+      }
+    }
+  });
+  
+  // Look for rosebud.ai in the tweet text
+  const tweetContent = tweetContainer.querySelector('[data-testid="tweetText"]');
+  let foundRosebudGame = false;
+  
+  if (tweetContent) {
+    // Check if rosebud.ai is mentioned
+    if (tweetContent.textContent.includes('rosebud.ai')) {
+      console.log('Found rosebud.ai mention in tweet');
+      
+      // Find a potential rosebud game link
+      for (const link of externalLinks) {
+        if (link.includes('rosebud.ai')) {
+          console.log('rosebud game: ' + link);
+          foundRosebudGame = true;
+          
+          // Update the iframe if we found a rosebud game link
+          if (gameContainer) {
+            const gameFrame = gameContainer.querySelector('iframe');
+            if (gameFrame) {
+              gameFrame.src = link;
+              gameContainer.style.display = 'flex';
+            }
+          }
+          
+          break;
+        }
+      }
+      
+      if (!foundRosebudGame) {
+        console.log('rosebud.ai mentioned but no game link found');
+      }
+    } else {
+      console.log('no rosebud game available');
+    }
+  }
+}
+
+// Observe URL changes using History API
+function observeUrlChanges() {
+  // Monitor history changes
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+  
+  history.pushState = function() {
+    originalPushState.apply(this, arguments);
+    checkForXPostAndExtractLinks();
+  };
+  
+  history.replaceState = function() {
+    originalReplaceState.apply(this, arguments);
+    checkForXPostAndExtractLinks();
+  };
+  
+  // Also listen for popstate events
+  window.addEventListener('popstate', () => {
+    checkForXPostAndExtractLinks();
+  });
+}
 
 function initGameFrame() {
   // Only create the frame once
