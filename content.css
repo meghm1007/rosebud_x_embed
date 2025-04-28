@@ -1,0 +1,79 @@
+.rosebud-game-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  height: 300px;
+  background-color: #000;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #333;
+  resize: both;
+}
+
+.rosebud-controls {
+  display: flex;
+  align-items: center;
+  background-color: #222;
+  height: 30px;
+  padding: 0 5px;
+  cursor: grab;
+  user-select: none;
+}
+
+.rosebud-drag-handle {
+  flex-grow: 1;
+  color: #aaa;
+  font-size: 14px;
+  line-height: 30px;
+  text-align: center;
+}
+
+.rosebud-minimize-btn,
+.rosebud-resize-btn,
+.rosebud-close-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 8px;
+  height: 30px;
+  transition: color 0.2s;
+}
+
+.rosebud-minimize-btn:hover,
+.rosebud-resize-btn:hover,
+.rosebud-close-btn:hover {
+  color: #fff;
+}
+
+.rosebud-close-btn:hover {
+  color: #ff4d4d;
+}
+
+.rosebud-resize-handle {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, #555 50%, #777 75%, #999 100%);
+  border-radius: 0 0 8px 0;
+  z-index: 10000;
+}
+
+.rosebud-resize-handle:hover {
+  background: linear-gradient(135deg, transparent 50%, #777 50%, #999 75%, #bbb 100%);
+}
+
+.rosebud-game-container iframe {
+  width: 100%;
+  height: calc(100% - 30px);
+  border: none;
+} 

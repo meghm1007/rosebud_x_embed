@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "X Rosebud Game Embed",
+  "version": "1.0",
+  "description": "Adds a small iframe with a Rosebud AI game while browsing X (Twitter)",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://twitter.com/*", "https://x.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://twitter.com/*", "https://x.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ]
+} 
