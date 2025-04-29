@@ -14,6 +14,35 @@ window.addEventListener('load', () => {
 let frameCreated = false;
 let gameContainer = null;
 
+// Track game visibility state
+let isGameVisible = localStorage.getItem('gameVisibility') !== 'false';
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === 'toggleGame') {
+    // If visibility is explicitly provided, use it, otherwise toggle
+    if (request.visibility !== undefined) {
+      isGameVisible = request.visibility;
+    } else {
+      isGameVisible = !isGameVisible;
+    }
+    
+    // Save state to localStorage
+    localStorage.setItem('gameVisibility', isGameVisible);
+    
+    // Toggle game visibility
+    toggleGameVisibility();
+    
+    // Respond with new state
+    sendResponse({success: true, isVisible: isGameVisible});
+  } 
+  else if (request.action === 'getGameState') {
+    // Return current visibility state
+    sendResponse({isVisible: isGameVisible});
+  }
+  return true; // Keep the message channel open for async response
+});
+
 // Function to find and extract links from current X post
 function checkForXPostAndExtractLinks() {
   const url = window.location.href;
@@ -288,13 +317,18 @@ function setupMutationObserver() {
 }
 
 function initGameFrame() {
-  // Only create the frame once
+  // Don't create multiple frames
   if (frameCreated) return;
+  frameCreated = true;
   
-  // Create container for our game frame
+  // Create container for the game
   gameContainer = document.createElement('div');
-  gameContainer.id = 'rosebud-game-container';
   gameContainer.className = 'rosebud-game-container';
+  
+  // Set initial visibility based on stored preference
+  if (!isGameVisible) {
+    gameContainer.style.display = 'none';
+  }
   
   // Create controls for the game container
   const controlsDiv = document.createElement('div');
@@ -375,9 +409,6 @@ function initGameFrame() {
   gameContainer.appendChild(gameFrame);
   gameContainer.appendChild(resizeHandle);
   document.body.appendChild(gameContainer);
-  
-  // Mark as created
-  frameCreated = true;
   
   // Setup drag functionality
   setupDrag(gameContainer, dragHandle);
@@ -585,23 +616,14 @@ function toggleMinimize(container, minimizeBtn) {
 
 // Toggle game visibility
 function toggleGameVisibility() {
-  if (!frameCreated) {
-    initGameFrame();
-  } else if (gameContainer) {
-    if (gameContainer.style.display === 'none') {
-      gameContainer.style.display = 'flex';
-    } else {
-      gameContainer.style.display = 'none';
-    }
+  if (!gameContainer) return;
+  
+  if (isGameVisible) {
+    gameContainer.style.display = 'flex';
+  } else {
+    gameContainer.style.display = 'none';
   }
 }
-
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-  if (message.action === 'toggleGame') {
-    toggleGameVisibility();
-  }
-});
 
 // Call init when page has loaded
 if (document.readyState === 'complete') {
