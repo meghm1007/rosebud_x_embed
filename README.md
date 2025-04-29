@@ -1,49 +1,60 @@
-# X Rosebud Game Embed
+# Rosebud Game for X
 
-A Chrome extension that adds a small, draggable, and resizable game iframe to X (Twitter) for playing Rosebud AI games while browsing.
+![Version](https://img.shields.io/badge/version-1.0-blue)
+![Platform](https://img.shields.io/badge/platform-Chrome-green)
 
-## Features
+An extension that lets you play Rosebud AI games while browsing X (Twitter). The game appears in a compact, movable window that won't interrupt your browsing experience.
 
-- Embeds a Rosebud AI FPS game in a draggable and resizable iframe
-- Works on Twitter.com and X.com
-- Toggle game visibility with the extension button
-- Minimize/maximize the game window
-- Resize game window in two ways:
-  - Quick resize button to toggle between normal and large sizes
-  - Drag the corner handle to manually resize to any dimension
-- Drag to reposition the game window
-- Close the game window when not needed
+<p align="center">
+  <img src="screenshots/preview.png" alt="Extension Preview" width="600">
+</p>
 
-## Installation
+## ✨ Features
 
-Since this extension is not yet published to the Chrome Web Store, you'll need to install it in developer mode:
+- **Seamless Integration**: Embed games directly within X.com (Twitter)
+- **Customizable View**:
+  - Drag to reposition
+  - Resize via corner handle or quick-size button
+  - Minimize when needed
+- **Non-Intrusive**: Toggle visibility with one click
+- **Responsive**: Adapts to different window sizes
 
-1. Download or clone this repository to your computer
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" using the toggle in the top-right corner
-4. Click "Load unpacked" and select the folder containing this extension
-5. The extension should now be installed and visible in your Chrome toolbar
+## 🚀 Quick Installation
 
-## Usage
+```
+1. Download this repository (.zip)
+2. Unzip to a folder on your computer
+3. Go to Chrome Extensions (chrome://extensions/)
+4. Enable "Developer mode" (top-right toggle)
+5. Click "Load unpacked" → select the unzipped folder
+```
 
-1. Navigate to Twitter.com or X.com
-2. The game iframe will automatically appear in the bottom-right corner of the page
-3. Use the controls in the top bar of the iframe to:
-   - Drag and reposition the game window (⋮⋮)
-   - Minimize/maximize the game window (−/+)
-   - Quick resize between normal and large size (⤡/⊙)
-   - Close the game window (×)
-4. Drag the corner handle in the bottom-right to manually resize the game window
-5. Click the extension icon in your browser toolbar to toggle the game window visibility
+## 💡 How to Use
 
-## Notes
+1. Visit X.com or Twitter.com
+2. The game window appears automatically in the bottom-right
+3. **Controls**:
+   - **⋮⋮** Drag to reposition 
+   - **−/+** Minimize/maximize
+   - **⤡** Toggle size (normal/large)
+   - **×** Close window
 
-- This extension embeds a specific FPS game from Rosebud AI
-- The iframe starts at 300x300 pixels but can be resized to better fit game content
-- The game may require mouse interaction - click inside the iframe to focus and control the game
-- If you find the game content is cut off, try resizing the window to see more of the game
+## 🔍 Troubleshooting
 
-## Credits
+- **Game not responding?** Click inside the game window to focus it
+- **Content cut off?** Resize the window using the corner handle
+- **Performance issues?** Try minimizing when not actively playing
 
-- Game provided by [Rosebud AI](https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f)
-- Extension created with ❤️ by [Your Name] 
+## 🛠️ Technical Details
+
+- Initial size: 300×300 pixels (resizable)
+- Game source: [Rosebud AI FPS Game](https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f)
+- Compatible with Chrome (desktop)
+
+## 📄 License
+
+[MIT License](LICENSE)
+
+---
+
+Created with 💜 by Megh
