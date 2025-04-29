@@ -1,0 +1,1 @@
+refresh the x page when you want to run the game to avoid the cross origin error

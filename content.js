@@ -296,14 +296,6 @@ function initGameFrame() {
   gameContainer.id = 'rosebud-game-container';
   gameContainer.className = 'rosebud-game-container';
   
-  // Create iframe for game
-  const gameFrame = document.createElement('iframe');
-  gameFrame.src = 'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f';
-  gameFrame.frameBorder = '0';
-  gameFrame.allowFullscreen = true;
-  gameFrame.allow = 'autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated';
-  gameFrame.sandbox = 'allow-forms allow-scripts allow-same-origin allow-popups allow-pointer-lock allow-top-navigation';
-  
   // Create controls for the game container
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'rosebud-controls';
@@ -328,6 +320,34 @@ function initGameFrame() {
   closeButton.textContent = '×';
   closeButton.title = 'Close game';
   
+  // Create URL input container
+  const urlInputContainer = document.createElement('div');
+  urlInputContainer.className = 'rosebud-url-container';
+  
+  // Create input for custom Rosebud game URL
+  const urlInput = document.createElement('input');
+  urlInput.type = 'text';
+  urlInput.className = 'rosebud-url-input';
+  urlInput.placeholder = 'Enter a rosebud.ai game link...';
+  
+  // Create load button
+  const loadButton = document.createElement('button');
+  loadButton.className = 'rosebud-load-btn';
+  loadButton.textContent = 'Load Game';
+  loadButton.title = 'Load Rosebud game';
+  
+  // Add URL input and load button to container
+  urlInputContainer.appendChild(urlInput);
+  urlInputContainer.appendChild(loadButton);
+  
+  // Create iframe for game with default game
+  const gameFrame = document.createElement('iframe');
+  gameFrame.src = 'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f';
+  gameFrame.frameBorder = '0';
+  gameFrame.allowFullscreen = true;
+  gameFrame.allow = 'autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated';
+  gameFrame.sandbox = 'allow-forms allow-scripts allow-same-origin allow-popups allow-pointer-lock allow-top-navigation';
+  
   // Add resize handle
   const resizeHandle = document.createElement('div');
   resizeHandle.className = 'rosebud-resize-handle';
@@ -339,6 +359,7 @@ function initGameFrame() {
   controlsDiv.appendChild(resizeButton);
   controlsDiv.appendChild(closeButton);
   gameContainer.appendChild(controlsDiv);
+  gameContainer.appendChild(urlInputContainer);
   gameContainer.appendChild(gameFrame);
   gameContainer.appendChild(resizeHandle);
   document.body.appendChild(gameContainer);
@@ -354,6 +375,60 @@ function initGameFrame() {
   
   // Setup button functionality
   setupButtons(gameContainer, minimizeButton, resizeButton, closeButton);
+  
+  // Setup URL input functionality
+  setupUrlInput(urlInput, loadButton, gameFrame);
+}
+
+// Setup URL input validation and loading
+function setupUrlInput(input, button, iframe) {
+  button.addEventListener('click', () => {
+    loadGameFromInput(input, iframe);
+  });
+  
+  // Also allow pressing Enter to load the game
+  input.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      loadGameFromInput(input, iframe);
+    }
+  });
+}
+
+// Validate and load game URL
+function loadGameFromInput(input, iframe) {
+  const url = input.value.trim();
+  
+  // Check if it's a valid Rosebud.ai URL
+  if (isValidRosebudUrl(url)) {
+    console.log('Loading Rosebud game:', url);
+    iframe.src = url;
+    
+    // Clear any error styling
+    input.style.borderColor = '';
+    input.title = '';
+  } else {
+    // Show error
+    console.log('Invalid Rosebud URL:', url);
+    input.style.borderColor = 'red';
+    input.title = 'Please enter a valid rosebud.ai game URL';
+    
+    // Shake the input to indicate error
+    input.classList.add('shake');
+    setTimeout(() => {
+      input.classList.remove('shake');
+    }, 500);
+  }
+}
+
+// Validate if URL is from Rosebud.ai
+function isValidRosebudUrl(url) {
+  // Basic validation - must be a rosebud.ai URL
+  return url && (
+    url.startsWith('https://rosebud.ai/') || 
+    url.startsWith('http://rosebud.ai/') ||
+    url.startsWith('https://www.rosebud.ai/') ||
+    url.startsWith('http://www.rosebud.ai/')
+  );
 }
 
 // Make the container draggable

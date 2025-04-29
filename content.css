@@ -3,7 +3,7 @@
   bottom: 20px;
   right: 20px;
   width: 300px;
-  height: 300px;
+  height: 350px;
   background-color: #000;
   border-radius: 8px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
@@ -35,7 +35,8 @@
 
 .rosebud-minimize-btn,
 .rosebud-resize-btn,
-.rosebud-close-btn {
+.rosebud-close-btn,
+.rosebud-load-btn {
   background: none;
   border: none;
   color: #ccc;
@@ -43,17 +44,63 @@
   font-size: 18px;
   padding: 0 8px;
   height: 30px;
-  transition: color 0.2s;
+  transition: color 0.2s, background-color 0.2s;
 }
 
 .rosebud-minimize-btn:hover,
-.rosebud-resize-btn:hover,
-.rosebud-close-btn:hover {
+.rosebud-resize-btn:hover {
   color: #fff;
 }
 
 .rosebud-close-btn:hover {
   color: #ff4d4d;
+}
+
+.rosebud-url-container {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  background-color: #333;
+  border-bottom: 1px solid #444;
+  height: 30px;
+}
+
+.rosebud-url-input {
+  flex-grow: 1;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #222;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  margin-right: 5px;
+}
+
+.rosebud-url-input:focus {
+  border-color: #0078d7;
+  box-shadow: 0 0 3px rgba(0, 120, 215, 0.5);
+}
+
+.rosebud-url-input::placeholder {
+  color: #888;
+}
+
+.rosebud-load-btn {
+  background-color: #0078d7;
+  border-radius: 4px;
+  padding: 0 8px;
+  color: white;
+  font-size: 12px;
+  height: 24px;
+  line-height: 24px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.rosebud-load-btn:hover {
+  background-color: #0091ff;
 }
 
 .rosebud-resize-handle {
@@ -74,6 +121,16 @@
 
 .rosebud-game-container iframe {
   width: 100%;
-  height: calc(100% - 30px);
+  height: calc(100% - 65px);
   border: none;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 } 
