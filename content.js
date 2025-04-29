@@ -342,7 +342,19 @@ function initGameFrame() {
   
   // Create iframe for game with default game
   const gameFrame = document.createElement('iframe');
-  gameFrame.src = 'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f';
+  
+  // Check if there's a stored game URL from a previous refresh
+  const storedGameUrl = localStorage.getItem('rosebudGameUrl');
+  if (storedGameUrl && isValidRosebudUrl(storedGameUrl)) {
+    gameFrame.src = storedGameUrl;
+    // Optionally, update the input field with the stored URL
+    urlInput.value = storedGameUrl;
+    // Clear the stored URL to prevent it from being used again on future page loads
+    localStorage.removeItem('rosebudGameUrl');
+  } else {
+    gameFrame.src = 'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f';
+  }
+  
   gameFrame.frameBorder = '0';
   gameFrame.allowFullscreen = true;
   gameFrame.allow = 'autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated';
@@ -401,11 +413,12 @@ function loadGameFromInput(input, iframe) {
   // Check if it's a valid Rosebud.ai URL
   if (isValidRosebudUrl(url)) {
     console.log('Loading Rosebud game:', url);
-    iframe.src = url;
     
-    // Clear any error styling
-    input.style.borderColor = '';
-    input.title = '';
+    // Store the URL in localStorage before refreshing
+    localStorage.setItem('rosebudGameUrl', url);
+    
+    // Refresh the page to avoid CORS issues
+    window.location.reload();
   } else {
     // Show error
     console.log('Invalid Rosebud URL:', url);
