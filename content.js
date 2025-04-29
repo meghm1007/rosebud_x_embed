@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', initGameFrame);
 window.addEventListener('load', initGameFrame);
 // Listen for URL changes on Twitter/X to detect when navigating to posts
 window.addEventListener('load', () => {
-  observeUrlChanges();
+  // Set up more robust URL change detection
+  setupUrlChangeDetection();
   // Check current URL on initial load
   checkForXPostAndExtractLinks();
 });
@@ -20,7 +21,16 @@ function checkForXPostAndExtractLinks() {
   if (url.match(/https?:\/\/(x|twitter)\.com\/[^\/]+\/status\/\d+/)) {
     console.log('X Post detected:', url);
     
-    // Wait for content to load
+    // Run immediately
+    runTcoLinkExtraction();
+    
+    // And then run multiple times with delays to catch when content loads
+    const delays = [500, 1000, 2000, 3000, 5000];
+    delays.forEach(delay => {
+      setTimeout(runTcoLinkExtraction, delay);
+    });
+    
+    // Wait for content to load for the rosebud specific checks
     setTimeout(() => {
       // Look for specific div using the selector
       const targetDiv = document.querySelector('div.css-175oi2r.r-1kqtdi0.r-1867qdf.r-1phboty.r-rs99b7.r-18u37iz.r-1udh08x.r-o7ynqc.r-6416eg.r-1ny4l3l');
@@ -68,6 +78,54 @@ function checkForXPostAndExtractLinks() {
       }
     }, 1500); // Give time for the tweet to fully load
   }
+}
+
+// Function to run the t.co extraction code exactly as it would run in console
+function runTcoLinkExtraction() {
+  // Method 1: Direct function call
+  extractTcoLinks();
+  
+  // Method 2: Inject and execute script in the page context
+  // This runs the code exactly as if it was typed in the console
+  const script = document.createElement('script');
+  script.textContent = `
+    // Step 1: Get all <a> elements from the whole document
+    const tcoLinks = Array.from(document.querySelectorAll('a'))
+      .map(a => a.href)
+      .filter(href => href.includes('t.co'));
+
+    // Step 2: Output the array
+    console.log("INJECTED SCRIPT: t.co links found:", tcoLinks);
+
+    // Step 3: Output the first t.co link
+    if (tcoLinks.length > 0) {
+      console.log("INJECTED SCRIPT: First t.co link:", tcoLinks[0]);
+    } else {
+      console.log("INJECTED SCRIPT: No t.co links found.");
+    }
+  `;
+  document.head.appendChild(script);
+  script.remove(); // Clean up after execution
+}
+
+// Function to extract all t.co links from the page
+function extractTcoLinks() {
+  // Step 1: Get all <a> elements from the whole document
+  const tcoLinks = Array.from(document.querySelectorAll('a'))
+    .map(a => a.href)
+    .filter(href => href.includes('t.co'));
+
+  // Step 2: Output the array
+  console.log("EXTENSION SCRIPT: t.co links found:", tcoLinks);
+
+  // Step 3: Output the first t.co link
+  if (tcoLinks.length > 0) {
+    console.log("EXTENSION SCRIPT: First t.co link:", tcoLinks[0]);
+  } else {
+    console.log("EXTENSION SCRIPT: No t.co links found.");
+  }
+  
+  return tcoLinks;
 }
 
 // Legacy method for extracting links
@@ -156,6 +214,25 @@ function tryLegacyExtraction() {
   }
 }
 
+// Set up comprehensive URL change detection
+function setupUrlChangeDetection() {
+  // Method 1: Monitor history API changes
+  observeUrlChanges();
+  
+  // Method 2: Use a MutationObserver to detect DOM changes that might indicate navigation
+  setupMutationObserver();
+  
+  // Method 3: Regular interval checking for URL changes
+  let lastUrl = location.href;
+  setInterval(() => {
+    if (lastUrl !== location.href) {
+      console.log('URL changed from interval check:', lastUrl, 'to', location.href);
+      lastUrl = location.href;
+      checkForXPostAndExtractLinks();
+    }
+  }, 500);
+}
+
 // Observe URL changes using History API
 function observeUrlChanges() {
   // Monitor history changes
@@ -164,17 +241,49 @@ function observeUrlChanges() {
   
   history.pushState = function() {
     originalPushState.apply(this, arguments);
+    console.log('URL changed from pushState:', location.href);
     checkForXPostAndExtractLinks();
   };
   
   history.replaceState = function() {
     originalReplaceState.apply(this, arguments);
+    console.log('URL changed from replaceState:', location.href);
     checkForXPostAndExtractLinks();
   };
   
   // Also listen for popstate events
   window.addEventListener('popstate', () => {
+    console.log('URL changed from popstate:', location.href);
     checkForXPostAndExtractLinks();
+  });
+}
+
+// Set up MutationObserver to detect DOM changes that might indicate navigation
+function setupMutationObserver() {
+  // The observer will look for changes that suggest a navigation has occurred
+  const observer = new MutationObserver((mutations) => {
+    // Check for specific navigation elements or content changes
+    // For Twitter/X, main content changes might indicate navigation
+    const contentChanged = mutations.some(mutation => {
+      return mutation.target && mutation.target.id === 'react-root' || 
+             mutation.target && mutation.target.closest('[data-testid="primaryColumn"]');
+    });
+    
+    if (contentChanged) {
+      console.log('Content change detected, checking if URL changed');
+      // Some platforms update the URL slightly after content changes
+      setTimeout(() => {
+        checkForXPostAndExtractLinks();
+      }, 100);
+    }
+  });
+  
+  // Start observing the document with the configured parameters
+  observer.observe(document, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false
   });
 }
 
