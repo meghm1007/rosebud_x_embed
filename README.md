@@ -12,7 +12,7 @@ An extension that lets you play Rosebud AI games while browsing X (Twitter). The
 ## 🎮 Demo
 
 <p align="center">
-  <video src="images/demo.mp4" width="600" controls></video>
+  <img src="images/demo.gif" alt="Extension Demo" width="600">
 </p>
 
 ## ✨ Features
