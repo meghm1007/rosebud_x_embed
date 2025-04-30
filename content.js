@@ -10,6 +10,26 @@ window.addEventListener('load', () => {
   checkForXPostAndExtractLinks();
 });
 
+// Array of Rosebud games to randomly choose from
+const ROSEBUD_GAMES = [
+  'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f', // Original FPS game
+  'https://rosebud.ai/p/800a3295-ea07-4c80-a4f1-10fd8db24088', // the SkySurfer
+  'https://rosebud.ai/p/49792577-8bc5-41aa-b87f-5f3a27f19d54', // Jumping Orbits
+  'https://rosebud.ai/p/a3148c46-ba80-433e-9ea5-5be4e38e6bd5', // Rosie vs Bugs Race
+  'https://rosebud.ai/p/d01a91fd-da61-4e4e-b410-b35c2f2ec6b7', // Mister Elastic
+  'https://rosebud.ai/p/aab470b0-3a6f-4779-a933-27ab03855589', // Tetra Blast!
+  'https://rosebud.ai/p/2a929c95-7bc2-42a6-9dca-d624a7b24f77', // KARTKART
+  'https://rosebud.ai/p/24a9c782-62f8-4ffd-8e0b-256c29ae0713', // Rogue Race
+  'https://rosebud.ai/p/1a506f9b-b242-46a7-88ae-041ce77a99eb', // Jumpja
+  'https://rosebud.ai/p/928c3a65-3e78-4e19-8f78-4a6e03c9f528'  // Fury Race : 1000km battle
+];
+
+// Function to get a random game URL
+function getRandomGame() {
+  const randomIndex = Math.floor(Math.random() * ROSEBUD_GAMES.length);
+  return ROSEBUD_GAMES[randomIndex];
+}
+
 // Track if frame has been created
 let frameCreated = false;
 let gameContainer = null;
@@ -386,7 +406,8 @@ function initGameFrame() {
     // Clear the stored URL to prevent it from being used again on future page loads
     localStorage.removeItem('rosebudGameUrl');
   } else {
-    gameFrame.src = 'https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f';
+    // Use a random game from our list
+    gameFrame.src = getRandomGame();
   }
   
   gameFrame.frameBorder = '0';
@@ -555,6 +576,7 @@ function setupResize(container, handle) {
 function setupButtons(container, minimizeBtn, resizeBtn, closeBtn) {
   let minimized = false;
   let enlarged = false;
+  let extraLarge = false;
   let originalWidth = '300px';
   let originalHeight = '300px';
   
@@ -563,30 +585,39 @@ function setupButtons(container, minimizeBtn, resizeBtn, closeBtn) {
   });
   
   resizeBtn.addEventListener('click', () => {
-    if (enlarged) {
+    if (extraLarge) {
       // Return to original size
       container.style.width = originalWidth;
       container.style.height = originalHeight;
       resizeBtn.textContent = '⤡';
       resizeBtn.title = 'Enlarge game';
+      enlarged = false;
+      extraLarge = false;
+    } else if (enlarged) {
+      // Move to extra large size
+      container.style.width = '800px';
+      container.style.height = '600px';
+      resizeBtn.textContent = '⊙';
+      resizeBtn.title = 'Restore size';
+      extraLarge = true;
     } else {
       // Store original size if not minimized
       if (!minimized) {
         originalWidth = container.style.width || '300px';
         originalHeight = container.style.height || '300px';
       }
-      // Enlarge to preset large size
+      // Enlarge to medium size
       container.style.width = '600px';
       container.style.height = '450px';
-      resizeBtn.textContent = '⊙';
-      resizeBtn.title = 'Restore size';
+      resizeBtn.textContent = '⤢';
+      resizeBtn.title = 'Extra large';
+      enlarged = true;
       
       // If was minimized, un-minimize it
       if (minimized) {
         toggleMinimize(container, minimizeBtn);
       }
     }
-    enlarged = !enlarged;
   });
   
   closeBtn.addEventListener('click', () => {
