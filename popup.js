@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set initial toggle state in UI
   updateToggleUI();
   
+  // Listen for state changes from content script
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'gameStateChanged' && request.isVisible !== undefined) {
+      isActive = request.isVisible;
+      localStorage.setItem('gameVisibility', isActive);
+      updateToggleUI();
+    }
+    return true; // Keep the message channel open for async response
+  });
+  
   // Check with content script for current visibility state
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0] && tabs[0].id) {

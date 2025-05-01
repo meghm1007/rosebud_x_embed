@@ -729,7 +729,21 @@ function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extra
   });
   
   closeBtn.addEventListener('click', () => {
+    // Hide the game container
     container.style.display = 'none';
+    
+    // Update visibility state in localStorage
+    isGameVisible = false;
+    localStorage.setItem('gameVisibility', isGameVisible);
+    
+    // Notify popup about state change if needed
+    chrome.runtime.sendMessage({
+      action: 'gameStateChanged',
+      isVisible: isGameVisible
+    }).catch(err => {
+      // Ignore errors when popup is not open
+      console.log('Could not notify popup, it might be closed');
+    });
   });
 }
 
