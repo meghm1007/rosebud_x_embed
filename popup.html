@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            width: 280px;
+            width: 350px;
             padding: 0;
             margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -48,6 +48,14 @@
             color: #cccccc;
             margin-bottom: 15px;
             line-height: 1.4;
+        }
+        
+        .tagline {
+            font-weight: 500;
+            color: #ff9d00;
+            font-size: 15px;
+            margin-bottom: 18px;
+            text-align: center;
         }
         
         .tips {
@@ -132,10 +140,35 @@
             text-decoration: none;
             font-weight: 500;
             transition: background-color 0.2s;
+            margin-bottom: 15px;
         }
         
         .button:hover {
             background-color: #cc0000;
+        }
+        
+        .create-game-btn {
+            background-color: #5e17eb;
+            margin-top: 5px;
+        }
+        
+        .create-game-btn:hover {
+            background-color: #7a3df0;
+        }
+        
+        .create-link {
+            display: block;
+            font-size: 12px;
+            margin-top: 5px;
+            margin-bottom: 8px;
+            color: #5e17eb;
+            text-decoration: none;
+            text-align: right;
+        }
+        
+        .create-link:hover {
+            color: #7a3df0;
+            text-decoration: underline;
         }
         
         .footer {
@@ -154,6 +187,84 @@
         .footer a:hover {
             text-decoration: underline;
         }
+        
+        .section-divider {
+            border-top: 1px solid #333;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .section-divider span {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #121212;
+            padding: 0 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .input-row {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .game-input {
+            flex-grow: 1;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #eee;
+            padding: 8px 10px;
+            font-size: 13px;
+            outline: none;
+            min-width: 0;
+        }
+        
+        .game-input::placeholder {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .game-input:focus {
+            border-color: #990000;
+        }
+        
+        .load-btn {
+            background-color: #990000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 6px;
+            margin-left: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .load-btn:hover {
+            background-color: #cc0000;
+        }
+        
+        .game-frame {
+            width: 100%;
+            height: 200px;
+            background-color: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+        
+        .error-message {
+            color: #ff5555;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -163,6 +274,8 @@
     </div>
     
     <div class="content">
+        <p class="tagline">Vibe code video games with Rosebud: No coding skills needed</p>
+        
         <p>Play Rosebud AI games while browsing X (Twitter) in a customizable window.</p>
         
         <div class="tips">
@@ -191,6 +304,23 @@
         <a href="https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f" target="_blank" class="button">
             <i class="fas fa-external-link-alt"></i> Play Full Game
         </a>
+        
+        <div class="section-divider">
+            <span>OR PLAY HERE</span>
+        </div>
+        
+        <div class="popup-game-section">
+            <div class="input-row">
+                <input type="text" id="game-url-input" class="game-input" placeholder="Paste link..." />
+                <button id="load-game-btn" class="load-btn">Load</button>
+            </div>
+            <a href="https://rosebud.ai/" target="_blank" class="create-link">Make your own game <i class="fas fa-external-link-alt"></i></a>
+            <div id="error-message" class="error-message">Please enter a valid Rosebud.ai game link</div>
+            <iframe id="popup-game-frame" class="game-frame" frameborder="0" allowfullscreen allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr"></iframe>
+            <a href="https://rosebud.ai/" target="_blank" class="button create-game-btn">
+                <i class="fas fa-magic"></i> Vibe code your own game now
+            </a>
+        </div>
     </div>
     
     <div class="footer">

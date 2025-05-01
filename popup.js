@@ -70,4 +70,62 @@ document.addEventListener('DOMContentLoaded', function() {
       toggleElement.classList.remove('active');
     }
   }
+  
+  // Get popup game elements
+  const gameUrlInput = document.getElementById('game-url-input');
+  const loadGameBtn = document.getElementById('load-game-btn');
+  const popupGameFrame = document.getElementById('popup-game-frame');
+  const errorMessage = document.getElementById('error-message');
+  
+  // Current game URL
+  let currentGameUrl = '';
+  
+  // Restore last played game URL if available
+  const lastPopupGameUrl = localStorage.getItem('popupGameUrl');
+  if (lastPopupGameUrl) {
+    gameUrlInput.value = lastPopupGameUrl;
+    // Optional: Auto-load the last game
+    loadGameInPopup(lastPopupGameUrl);
+  }
+  
+  // Add event listener for the load game button
+  loadGameBtn.addEventListener('click', function() {
+    const gameUrl = gameUrlInput.value.trim();
+    if (isValidRosebudUrl(gameUrl)) {
+      loadGameInPopup(gameUrl);
+      errorMessage.style.display = 'none';
+      // Save this URL for next time
+      localStorage.setItem('popupGameUrl', gameUrl);
+      // Save current URL
+      currentGameUrl = gameUrl;
+    } else {
+      errorMessage.style.display = 'block';
+      popupGameFrame.style.display = 'none';
+    }
+  });
+  
+  // Also allow pressing Enter to load the game
+  gameUrlInput.addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') {
+      loadGameBtn.click();
+    }
+  });
+  
+  // Function to load a game in the popup iframe
+  function loadGameInPopup(url) {
+    popupGameFrame.src = url;
+    popupGameFrame.style.display = 'block';
+    currentGameUrl = url;
+  }
+  
+  // Function to validate Rosebud URL
+  function isValidRosebudUrl(url) {
+    // Basic validation - must be a rosebud.ai URL
+    return url && (
+      url.startsWith('https://rosebud.ai/') || 
+      url.startsWith('http://rosebud.ai/') ||
+      url.startsWith('https://www.rosebud.ai/') ||
+      url.startsWith('http://www.rosebud.ai/')
+    );
+  }
 }); 

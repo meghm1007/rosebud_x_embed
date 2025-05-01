@@ -132,6 +132,30 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // Return current visibility state and mute state
     sendResponse({isVisible: isGameVisible, isMuted: isTabMuted});
   }
+  else if (request.action === 'loadGame') {
+    // Load a specific game URL in the content iframe
+    if (request.gameUrl && gameContainer) {
+      const gameFrame = gameContainer.querySelector('iframe');
+      if (gameFrame) {
+        // Set the URL
+        gameFrame.src = request.gameUrl;
+        
+        // Set visibility if provided
+        if (request.visibility !== undefined) {
+          isGameVisible = request.visibility;
+          localStorage.setItem('gameVisibility', isGameVisible);
+          toggleGameVisibility();
+        }
+        
+        // Send success response
+        sendResponse({success: true});
+      } else {
+        sendResponse({success: false, error: "Game frame not found"});
+      }
+    } else {
+      sendResponse({success: false, error: "Invalid URL or game container not initialized"});
+    }
+  }
   return true; // Keep the message channel open for async response
 });
 
@@ -518,12 +542,17 @@ function initGameFrame() {
   // Create URL input container
   const urlInputContainer = document.createElement('div');
   urlInputContainer.className = 'rosebud-url-container';
+  urlInputContainer.style.display = 'flex';
+  urlInputContainer.style.alignItems = 'center';
+  urlInputContainer.style.marginBottom = '5px';
   
   // Create input for custom Rosebud game URL
   const urlInput = document.createElement('input');
   urlInput.type = 'text';
   urlInput.className = 'rosebud-url-input';
-  urlInput.placeholder = 'Enter a rosebud.ai game link...';
+  urlInput.placeholder = 'Paste link...';
+  urlInput.style.flexGrow = '1';
+  urlInput.style.marginRight = '5px';
   
   // Create load button
   const loadButton = document.createElement('button');
@@ -531,9 +560,36 @@ function initGameFrame() {
   loadButton.textContent = 'Load Game';
   loadButton.title = 'Load Rosebud game';
   
-  // Add URL input and load button to container
+  // Create Make Your Own Game CTA button
+  const createGameLink = document.createElement('a');
+  createGameLink.href = 'https://rosebud.ai/';
+  createGameLink.target = '_blank';
+  createGameLink.className = 'rosebud-create-btn';
+  createGameLink.innerHTML = 'Make Your Own😎 <span style="font-size: 10px; margin-left: 2px;">↗️</span>';
+  createGameLink.title = 'Create your own game on Rosebud.ai';
+  createGameLink.style.background = '#5e17eb';
+  createGameLink.style.color = 'white';
+  createGameLink.style.padding = '4px 8px';
+  createGameLink.style.borderRadius = '4px';
+  createGameLink.style.textDecoration = 'none';
+  createGameLink.style.fontSize = '12px';
+  createGameLink.style.marginLeft = '5px';
+  createGameLink.style.whiteSpace = 'nowrap';
+  createGameLink.style.display = 'inline-block';
+  
+  // Add URL input, load button and CTA to container
   urlInputContainer.appendChild(urlInput);
   urlInputContainer.appendChild(loadButton);
+  urlInputContainer.appendChild(createGameLink);
+  
+  // Add hover effect for the create game button
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .rosebud-create-btn:hover {
+      background-color: #7a3df0 !important;
+    }
+  `;
+  document.head.appendChild(styleElement);
   
   // Create iframe for game with default game
   const gameFrame = document.createElement('iframe');
