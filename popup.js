@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
       isActive = request.isVisible;
       localStorage.setItem('gameVisibility', isActive);
       updateToggleUI();
+      
+      // If game is now hidden, also update the mute state in localStorage
+      if (!isActive) {
+        localStorage.setItem('rosebudTabMuted', 'false');
+      }
     }
     return true; // Keep the message channel open for async response
   });

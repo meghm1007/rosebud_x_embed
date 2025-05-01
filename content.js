@@ -24,22 +24,43 @@ const ROSEBUD_GAMES = [
   'https://rosebud.ai/p/928c3a65-3e78-4e19-8f78-4a6e03c9f528'  // Fury Race : 1000km battle
 ];
 
-// Function to get a random game URL
+// Function to get a random game URL that's different from the current one
 function getRandomGame() {
-  const randomIndex = Math.floor(Math.random() * ROSEBUD_GAMES.length);
-  return ROSEBUD_GAMES[randomIndex];
+  // Get the current game URL from the iframe if available
+  let currentGameUrl = '';
+  if (gameContainer) {
+    const gameFrame = gameContainer.querySelector('iframe');
+    if (gameFrame && gameFrame.src) {
+      currentGameUrl = gameFrame.src;
+    }
+  }
+  
+  // If we don't have a current game URL, also check localStorage
+  if (!currentGameUrl) {
+    currentGameUrl = localStorage.getItem('rosebudGameUrl') || '';
+  }
+  
+  // Create a copy of the games array that excludes the current game
+  const availableGames = ROSEBUD_GAMES.filter(game => 
+    !currentGameUrl.includes(game) && 
+    !game.includes(extractGameId(currentGameUrl))
+  );
+  
+  // If all games are filtered out (unlikely), use the full list
+  const gamesPool = availableGames.length > 0 ? availableGames : ROSEBUD_GAMES;
+  
+  // Get a random game from the available options
+  const randomIndex = Math.floor(Math.random() * gamesPool.length);
+  return gamesPool[randomIndex];
 }
 
-// Function to load the next random game
-function loadNextRandomGame() {
-  const randomGameUrl = getRandomGame();
-  console.log('Loading next random game:', randomGameUrl);
+// Helper function to extract game ID from URL
+function extractGameId(url) {
+  if (!url) return '';
   
-  // Store the URL in localStorage before refreshing
-  localStorage.setItem('rosebudGameUrl', randomGameUrl);
-  
-  // Refresh the page to avoid CORS issues
-  window.location.reload();
+  // Try to extract the game ID from the URL
+  const match = url.match(/\/p\/([a-zA-Z0-9-]+)/);
+  return match ? match[1] : '';
 }
 
 // Track if frame has been created
@@ -48,6 +69,9 @@ let gameContainer = null;
 
 // Track game visibility state
 let isGameVisible = localStorage.getItem('gameVisibility') !== 'false';
+
+// Track tab mute state
+let isTabMuted = localStorage.getItem('rosebudTabMuted') === 'true';
 
 // Default container dimensions
 const defaultWidth = '300px';
@@ -105,8 +129,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({success: true, isVisible: isGameVisible});
   } 
   else if (request.action === 'getGameState') {
-    // Return current visibility state
-    sendResponse({isVisible: isGameVisible});
+    // Return current visibility state and mute state
+    sendResponse({isVisible: isGameVisible, isMuted: isTabMuted});
   }
   return true; // Keep the message channel open for async response
 });
@@ -419,6 +443,10 @@ function initGameFrame() {
       background-color: #4a90e2;
       color: white;
     }
+    .rosebud-mute-btn.muted {
+      background-color: #e24a4a;
+      color: white;
+    }
   `;
   document.head.appendChild(style);
   
@@ -453,6 +481,26 @@ function initGameFrame() {
   extraLargeSizeButton.className = 'rosebud-size-btn rosebud-xlarge-size-btn';
   extraLargeSizeButton.textContent = '⬛';
   extraLargeSizeButton.title = 'Extra large size';
+  
+  // Create mute button
+  const muteButton = document.createElement('button');
+  muteButton.className = 'rosebud-mute-btn';
+  muteButton.textContent = '🔊';
+  muteButton.title = 'Toggle sound';
+  
+  // Set initial mute button state based on localStorage
+  updateMuteButtonState(muteButton);
+  
+  // Apply tab muting on load if previously muted
+  if (isTabMuted) {
+    // Use chrome.tabs API to mute the current tab
+    chrome.runtime.sendMessage({
+      action: 'toggleTabMute',
+      muted: true
+    }).catch(err => {
+      console.log('Could not send initial mute message to background script', err);
+    });
+  }
   
   // Highlight the current size button
   updateSizeButtonsState([normalSizeButton, largeSizeButton, extraLargeSizeButton], containerSizeMode);
@@ -519,6 +567,7 @@ function initGameFrame() {
   controlsDiv.appendChild(normalSizeButton);
   controlsDiv.appendChild(largeSizeButton);
   controlsDiv.appendChild(extraLargeSizeButton);
+  controlsDiv.appendChild(muteButton);
   controlsDiv.appendChild(nextGameButton);
   controlsDiv.appendChild(closeButton);
   gameContainer.appendChild(controlsDiv);
@@ -534,7 +583,7 @@ function initGameFrame() {
   setupResize(gameContainer, resizeHandle);
   
   // Setup button functionality
-  setupButtons(gameContainer, minimizeButton, normalSizeButton, largeSizeButton, extraLargeSizeButton, closeButton, nextGameButton);
+  setupButtons(gameContainer, minimizeButton, normalSizeButton, largeSizeButton, extraLargeSizeButton, closeButton, nextGameButton, muteButton);
   
   // Setup URL input functionality
   setupUrlInput(urlInput, loadButton, gameFrame);
@@ -673,7 +722,7 @@ function setupResize(container, handle) {
 }
 
 // Setup minimize and close buttons
-function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extraLargeSizeBtn, closeBtn, nextGameBtn) {
+function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extraLargeSizeBtn, closeBtn, nextGameBtn, muteBtn) {
   let minimized = false;
   const sizeButtons = [normalSizeBtn, largeSizeBtn, extraLargeSizeBtn];
   
@@ -736,6 +785,21 @@ function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extra
     isGameVisible = false;
     localStorage.setItem('gameVisibility', isGameVisible);
     
+    // Unmute the tab when hiding the game
+    if (isTabMuted) {
+      isTabMuted = false;
+      localStorage.setItem('rosebudTabMuted', isTabMuted);
+      updateMuteButtonState(muteBtn);
+      
+      // Tell background script to unmute the tab
+      chrome.runtime.sendMessage({
+        action: 'toggleTabMute',
+        muted: false
+      }).catch(err => {
+        console.log('Could not send unmute message to background script', err);
+      });
+    }
+    
     // Notify popup about state change if needed
     chrome.runtime.sendMessage({
       action: 'gameStateChanged',
@@ -744,6 +808,10 @@ function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extra
       // Ignore errors when popup is not open
       console.log('Could not notify popup, it might be closed');
     });
+  });
+  
+  muteBtn.addEventListener('click', () => {
+    toggleMute(container, muteBtn);
   });
 }
 
@@ -775,6 +843,26 @@ function toggleGameVisibility() {
     gameContainer.style.display = 'flex';
   } else {
     gameContainer.style.display = 'none';
+    
+    // Unmute the tab when hiding the game via the popup toggle
+    if (isTabMuted) {
+      isTabMuted = false;
+      localStorage.setItem('rosebudTabMuted', isTabMuted);
+      
+      // Find and update the mute button if it exists
+      const muteBtn = gameContainer.querySelector('.rosebud-mute-btn');
+      if (muteBtn) {
+        updateMuteButtonState(muteBtn);
+      }
+      
+      // Tell background script to unmute the tab
+      chrome.runtime.sendMessage({
+        action: 'toggleTabMute',
+        muted: false
+      }).catch(err => {
+        console.log('Could not send unmute message to background script', err);
+      });
+    }
   }
 }
 
@@ -793,6 +881,52 @@ function updateSizeButtonsState(sizeButtons, activeMode) {
   } else if (activeMode === SIZE_MODES.EXTRA_LARGE) {
     sizeButtons[2].classList.add('active');
   }
+}
+
+// Function to toggle tab mute state
+function toggleMute(container, muteBtn) {
+  // Toggle mute state
+  isTabMuted = !isTabMuted;
+  
+  // Save state to localStorage
+  localStorage.setItem('rosebudTabMuted', isTabMuted);
+  
+  // Update button appearance
+  updateMuteButtonState(muteBtn);
+  
+  // Use chrome.tabs API to mute/unmute the current tab
+  chrome.runtime.sendMessage({
+    action: 'toggleTabMute',
+    muted: isTabMuted
+  }).catch(err => {
+    console.log('Could not send mute message to background script', err);
+  });
+}
+
+// Function to update mute button appearance based on state
+function updateMuteButtonState(muteBtn) {
+  if (isTabMuted) {
+    muteBtn.textContent = '🔇';
+    muteBtn.classList.add('muted');
+    muteBtn.title = 'Unmute sound';
+  } else {
+    muteBtn.textContent = '🔊';
+    muteBtn.classList.remove('muted');
+    muteBtn.title = 'Mute sound';
+  }
+}
+
+// Function to load the next random game
+function loadNextRandomGame() {
+  const randomGameUrl = getRandomGame();
+  console.log('Loading next random game:', randomGameUrl);
+  
+  // Store the URL and current mute state in localStorage before refreshing
+  localStorage.setItem('rosebudGameUrl', randomGameUrl);
+  localStorage.setItem('rosebudTabMuted', isTabMuted);
+  
+  // Refresh the page to avoid CORS issues
+  window.location.reload();
 }
 
 // Call init when page has loaded
