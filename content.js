@@ -30,6 +30,18 @@ function getRandomGame() {
   return ROSEBUD_GAMES[randomIndex];
 }
 
+// Function to load the next random game
+function loadNextRandomGame() {
+  const randomGameUrl = getRandomGame();
+  console.log('Loading next random game:', randomGameUrl);
+  
+  // Store the URL in localStorage before refreshing
+  localStorage.setItem('rosebudGameUrl', randomGameUrl);
+  
+  // Refresh the page to avoid CORS issues
+  window.location.reload();
+}
+
 // Track if frame has been created
 let frameCreated = false;
 let gameContainer = null;
@@ -369,6 +381,11 @@ function initGameFrame() {
   resizeButton.textContent = '⤡';
   resizeButton.title = 'Toggle size';
   
+  const nextGameButton = document.createElement('button');
+  nextGameButton.className = 'rosebud-next-game-btn';
+  nextGameButton.textContent = '→';
+  nextGameButton.title = 'Play next random game';
+  
   const closeButton = document.createElement('button');
   closeButton.className = 'rosebud-close-btn';
   closeButton.textContent = '×';
@@ -424,6 +441,7 @@ function initGameFrame() {
   controlsDiv.appendChild(dragHandle);
   controlsDiv.appendChild(minimizeButton);
   controlsDiv.appendChild(resizeButton);
+  controlsDiv.appendChild(nextGameButton);
   controlsDiv.appendChild(closeButton);
   gameContainer.appendChild(controlsDiv);
   gameContainer.appendChild(urlInputContainer);
@@ -438,7 +456,7 @@ function initGameFrame() {
   setupResize(gameContainer, resizeHandle);
   
   // Setup button functionality
-  setupButtons(gameContainer, minimizeButton, resizeButton, closeButton);
+  setupButtons(gameContainer, minimizeButton, resizeButton, closeButton, nextGameButton);
   
   // Setup URL input functionality
   setupUrlInput(urlInput, loadButton, gameFrame);
@@ -573,7 +591,7 @@ function setupResize(container, handle) {
 }
 
 // Setup minimize and close buttons
-function setupButtons(container, minimizeBtn, resizeBtn, closeBtn) {
+function setupButtons(container, minimizeBtn, resizeBtn, closeBtn, nextGameBtn) {
   let minimized = false;
   let enlarged = false;
   let extraLarge = false;
@@ -618,6 +636,11 @@ function setupButtons(container, minimizeBtn, resizeBtn, closeBtn) {
         toggleMinimize(container, minimizeBtn);
       }
     }
+  });
+  
+  // Add event listener for the next game button
+  nextGameBtn.addEventListener('click', () => {
+    loadNextRandomGame();
   });
   
   closeBtn.addEventListener('click', () => {
