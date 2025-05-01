@@ -49,6 +49,42 @@ let gameContainer = null;
 // Track game visibility state
 let isGameVisible = localStorage.getItem('gameVisibility') !== 'false';
 
+// Default container dimensions
+const defaultWidth = '300px';
+const defaultHeight = '300px';
+
+// Size presets
+const SIZE_MODES = {
+  NORMAL: 'normal',
+  LARGE: 'large',
+  EXTRA_LARGE: 'extraLarge'
+};
+
+// Size dimensions for each mode
+const SIZE_DIMENSIONS = {
+  [SIZE_MODES.NORMAL]: { width: '300px', height: '300px' },
+  [SIZE_MODES.LARGE]: { width: '600px', height: '450px' },
+  [SIZE_MODES.EXTRA_LARGE]: { width: '800px', height: '600px' }
+};
+
+// Track container dimensions with localStorage
+let containerSizeMode = localStorage.getItem('rosebudGameSizeMode') || SIZE_MODES.NORMAL;
+
+// Function to save container size mode to localStorage
+function saveContainerSizeMode(sizeMode) {
+  localStorage.setItem('rosebudGameSizeMode', sizeMode);
+  console.log('Saved size mode:', sizeMode);
+}
+
+// Function to apply size mode to container
+function applySizeMode(container, sizeMode) {
+  const dimensions = SIZE_DIMENSIONS[sizeMode];
+  container.style.width = dimensions.width;
+  container.style.height = dimensions.height;
+  containerSizeMode = sizeMode;
+  saveContainerSizeMode(sizeMode);
+}
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'toggleGame') {
@@ -357,14 +393,40 @@ function initGameFrame() {
   gameContainer = document.createElement('div');
   gameContainer.className = 'rosebud-game-container';
   
+  // Set initial dimensions from localStorage size mode
+  const initialDimensions = SIZE_DIMENSIONS[containerSizeMode];
+  gameContainer.style.width = initialDimensions.width;
+  gameContainer.style.height = initialDimensions.height;
+  
   // Set initial visibility based on stored preference
   if (!isGameVisible) {
     gameContainer.style.display = 'none';
   }
   
+  // Add CSS styles for spacing between buttons
+  const style = document.createElement('style');
+  style.textContent = `
+    .rosebud-controls button, .rosebud-controls div {
+      margin-right: 8px;
+    }
+    .rosebud-controls button:last-child {
+      margin-right: 0;
+    }
+    .rosebud-size-btn {
+      margin-right: 4px;
+    }
+    .rosebud-size-btn.active {
+      background-color: #4a90e2;
+      color: white;
+    }
+  `;
+  document.head.appendChild(style);
+  
   // Create controls for the game container
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'rosebud-controls';
+  controlsDiv.style.display = 'flex';
+  controlsDiv.style.alignItems = 'center';
   
   const dragHandle = document.createElement('div');
   dragHandle.className = 'rosebud-drag-handle';
@@ -376,10 +438,24 @@ function initGameFrame() {
   minimizeButton.textContent = '−';
   minimizeButton.title = 'Minimize game';
   
-  const resizeButton = document.createElement('button');
-  resizeButton.className = 'rosebud-resize-btn';
-  resizeButton.textContent = '⤡';
-  resizeButton.title = 'Toggle size';
+  // Create size buttons
+  const normalSizeButton = document.createElement('button');
+  normalSizeButton.className = 'rosebud-size-btn rosebud-normal-size-btn';
+  normalSizeButton.textContent = '□';
+  normalSizeButton.title = 'Normal size';
+  
+  const largeSizeButton = document.createElement('button');
+  largeSizeButton.className = 'rosebud-size-btn rosebud-large-size-btn';
+  largeSizeButton.textContent = '▢';
+  largeSizeButton.title = 'Large size';
+  
+  const extraLargeSizeButton = document.createElement('button');
+  extraLargeSizeButton.className = 'rosebud-size-btn rosebud-xlarge-size-btn';
+  extraLargeSizeButton.textContent = '⬛';
+  extraLargeSizeButton.title = 'Extra large size';
+  
+  // Highlight the current size button
+  updateSizeButtonsState([normalSizeButton, largeSizeButton, extraLargeSizeButton], containerSizeMode);
   
   const nextGameButton = document.createElement('button');
   nextGameButton.className = 'rosebud-next-game-btn';
@@ -440,7 +516,9 @@ function initGameFrame() {
   // Add elements to DOM
   controlsDiv.appendChild(dragHandle);
   controlsDiv.appendChild(minimizeButton);
-  controlsDiv.appendChild(resizeButton);
+  controlsDiv.appendChild(normalSizeButton);
+  controlsDiv.appendChild(largeSizeButton);
+  controlsDiv.appendChild(extraLargeSizeButton);
   controlsDiv.appendChild(nextGameButton);
   controlsDiv.appendChild(closeButton);
   gameContainer.appendChild(controlsDiv);
@@ -456,7 +534,7 @@ function initGameFrame() {
   setupResize(gameContainer, resizeHandle);
   
   // Setup button functionality
-  setupButtons(gameContainer, minimizeButton, resizeButton, closeButton, nextGameButton);
+  setupButtons(gameContainer, minimizeButton, normalSizeButton, largeSizeButton, extraLargeSizeButton, closeButton, nextGameButton);
   
   // Setup URL input functionality
   setupUrlInput(urlInput, loadButton, gameFrame);
@@ -587,54 +665,61 @@ function setupResize(container, handle) {
   function stopResize() {
     document.removeEventListener('mousemove', resizeElement, false);
     document.removeEventListener('mouseup', stopResize, false);
+    
+    // After manual resize, we'll set to custom mode
+    containerSizeMode = 'custom';
+    saveContainerSizeMode(containerSizeMode);
   }
 }
 
 // Setup minimize and close buttons
-function setupButtons(container, minimizeBtn, resizeBtn, closeBtn, nextGameBtn) {
+function setupButtons(container, minimizeBtn, normalSizeBtn, largeSizeBtn, extraLargeSizeBtn, closeBtn, nextGameBtn) {
   let minimized = false;
-  let enlarged = false;
-  let extraLarge = false;
-  let originalWidth = '300px';
-  let originalHeight = '300px';
+  const sizeButtons = [normalSizeBtn, largeSizeBtn, extraLargeSizeBtn];
   
   minimizeBtn.addEventListener('click', () => {
     toggleMinimize(container, minimizeBtn);
   });
   
-  resizeBtn.addEventListener('click', () => {
-    if (extraLarge) {
-      // Return to original size
-      container.style.width = originalWidth;
-      container.style.height = originalHeight;
-      resizeBtn.textContent = '⤡';
-      resizeBtn.title = 'Enlarge game';
-      enlarged = false;
-      extraLarge = false;
-    } else if (enlarged) {
-      // Move to extra large size
-      container.style.width = '800px';
-      container.style.height = '600px';
-      resizeBtn.textContent = '⊙';
-      resizeBtn.title = 'Restore size';
-      extraLarge = true;
+  // Normal size button
+  normalSizeBtn.addEventListener('click', () => {
+    if (!minimized) {
+      applySizeMode(container, SIZE_MODES.NORMAL);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.NORMAL);
     } else {
-      // Store original size if not minimized
-      if (!minimized) {
-        originalWidth = container.style.width || '300px';
-        originalHeight = container.style.height || '300px';
-      }
-      // Enlarge to medium size
-      container.style.width = '600px';
-      container.style.height = '450px';
-      resizeBtn.textContent = '⤢';
-      resizeBtn.title = 'Extra large';
-      enlarged = true;
-      
-      // If was minimized, un-minimize it
-      if (minimized) {
-        toggleMinimize(container, minimizeBtn);
-      }
+      // If minimized, expand first
+      toggleMinimize(container, minimizeBtn);
+      // Then apply size
+      applySizeMode(container, SIZE_MODES.NORMAL);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.NORMAL);
+    }
+  });
+  
+  // Large size button
+  largeSizeBtn.addEventListener('click', () => {
+    if (!minimized) {
+      applySizeMode(container, SIZE_MODES.LARGE);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.LARGE);
+    } else {
+      // If minimized, expand first
+      toggleMinimize(container, minimizeBtn);
+      // Then apply size
+      applySizeMode(container, SIZE_MODES.LARGE);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.LARGE);
+    }
+  });
+  
+  // Extra large size button
+  extraLargeSizeBtn.addEventListener('click', () => {
+    if (!minimized) {
+      applySizeMode(container, SIZE_MODES.EXTRA_LARGE);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.EXTRA_LARGE);
+    } else {
+      // If minimized, expand first
+      toggleMinimize(container, minimizeBtn);
+      // Then apply size
+      applySizeMode(container, SIZE_MODES.EXTRA_LARGE);
+      updateSizeButtonsState(sizeButtons, SIZE_MODES.EXTRA_LARGE);
     }
   });
   
@@ -676,6 +761,23 @@ function toggleGameVisibility() {
     gameContainer.style.display = 'flex';
   } else {
     gameContainer.style.display = 'none';
+  }
+}
+
+// Helper function to update size button states
+function updateSizeButtonsState(sizeButtons, activeMode) {
+  // Remove active class from all buttons
+  sizeButtons.forEach(button => {
+    button.classList.remove('active');
+  });
+  
+  // Add active class to the correct button
+  if (activeMode === SIZE_MODES.NORMAL) {
+    sizeButtons[0].classList.add('active');
+  } else if (activeMode === SIZE_MODES.LARGE) {
+    sizeButtons[1].classList.add('active');
+  } else if (activeMode === SIZE_MODES.EXTRA_LARGE) {
+    sizeButtons[2].classList.add('active');
   }
 }
 
