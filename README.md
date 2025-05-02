@@ -57,10 +57,4 @@ An extension that lets you play Rosebud AI games while browsing X (Twitter). The
 - Game source: [Rosebud AI FPS Game](https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f)
 - Compatible with Chrome (desktop)
 
-## 📄 License
-
-[MIT License](LICENSE)
-
----
-
 Created with 💜 by Megh
