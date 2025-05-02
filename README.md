@@ -54,7 +54,7 @@ An extension that lets you play Rosebud AI games while browsing X (Twitter). The
 ## 🛠️ Technical Details
 
 - Initial size: 300×300 pixels (resizable)
-- Game source: [Rosebud AI FPS Game](https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f)
+- Game source: [Rosebud AI](https://rosebud.ai/)
 - Compatible with Chrome (desktop)
 
 Created with 💜 by Megh
