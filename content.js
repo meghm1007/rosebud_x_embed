@@ -156,6 +156,55 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       sendResponse({success: false, error: "Invalid URL or game container not initialized"});
     }
   }
+  else if (request.action === 'forceCaptureLinks') {
+    // Force extraction of t.co links from the page
+    console.log('Forced capture of t.co links requested');
+    
+    // Run the extraction functions
+    runTcoLinkExtraction();
+    
+    // Get the latest stored link
+    const lastTcoLink = localStorage.getItem('lastTcoLink');
+    const allTcoLinks = localStorage.getItem('allTcoLinks');
+    let parsedLinks = [];
+    
+    try {
+      parsedLinks = JSON.parse(allTcoLinks || '[]');
+    } catch (e) {
+      console.error('Error parsing stored links:', e);
+    }
+    
+    // Also do a fresh scan of the page for any t.co links
+    const freshLinks = Array.from(document.querySelectorAll('a'))
+      .map(a => a.href)
+      .filter(href => href.includes('t.co/'));
+    
+    // Combine all links and remove duplicates
+    const allLinks = [...new Set([...parsedLinks, ...freshLinks])];
+    
+    // If we have any links, return the most recent one
+    if (allLinks.length > 0) {
+      const tcoLink = allLinks[0];
+      
+      // Update storage with the most recent link
+      localStorage.setItem('lastTcoLink', tcoLink);
+      localStorage.setItem('allTcoLinks', JSON.stringify(allLinks));
+      
+      // Send the link to the background script as well
+      chrome.runtime.sendMessage({
+        action: 'newTcoLinkFound',
+        tcoLink: tcoLink,
+        allLinks: allLinks
+      });
+      
+      // Respond with the link
+      sendResponse({success: true, tcoLink: tcoLink, allLinks: allLinks});
+    } else {
+      // No links found
+      sendResponse({success: false, error: 'No t.co links found'});
+    }
+  }
+  
   return true; // Keep the message channel open for async response
 });
 
@@ -174,6 +223,9 @@ function checkForXPostAndExtractLinks() {
     delays.forEach(delay => {
       setTimeout(runTcoLinkExtraction, delay);
     });
+    
+    // Setup a more aggressive monitor for t.co links on post pages
+    setupConsoleTcoMonitor();
     
     // Wait for content to load for the rosebud specific checks
     setTimeout(() => {
@@ -258,7 +310,7 @@ function extractTcoLinks() {
   // Step 1: Get all <a> elements from the whole document
   const tcoLinks = Array.from(document.querySelectorAll('a'))
     .map(a => a.href)
-    .filter(href => href.includes('t.co'));
+    .filter(href => href.includes('t.co/'));
 
   // Step 2: Output the array
   console.log("EXTENSION SCRIPT: t.co links found:", tcoLinks);
@@ -266,11 +318,76 @@ function extractTcoLinks() {
   // Step 3: Output the first t.co link
   if (tcoLinks.length > 0) {
     console.log("EXTENSION SCRIPT: First t.co link:", tcoLinks[0]);
+    
+    // Check if the current page contains "rosebud" text which might indicate a game link
+    const pageText = document.body.innerText.toLowerCase();
+    const hasRosebudMention = pageText.includes('rosebud') || 
+                              pageText.includes('game') || 
+                              pageText.includes('play');
+    
+    // Look for game-related text near the link
+    const gameRelatedContext = checkForGameContext(tcoLinks[0]);
+    
+    // Store the most recent t.co link in localStorage
+    localStorage.setItem('lastTcoLink', tcoLinks[0]);
+    
+    // Optional: Store all t.co links
+    localStorage.setItem('allTcoLinks', JSON.stringify(tcoLinks));
+    
+    // Send the t.co link to the popup via the background script
+    chrome.runtime.sendMessage({
+      action: 'newTcoLinkFound',
+      tcoLink: tcoLinks[0],
+      allLinks: tcoLinks,
+      possibleGame: hasRosebudMention || gameRelatedContext,
+      contextInfo: {
+        hasRosebudMention,
+        gameRelatedContext,
+        url: window.location.href
+      }
+    });
   } else {
     console.log("EXTENSION SCRIPT: No t.co links found.");
   }
   
   return tcoLinks;
+}
+
+// Function to check if there's game-related context around a link
+function checkForGameContext(link) {
+  // Try to find the link element
+  const linkElements = Array.from(document.querySelectorAll('a'))
+                            .filter(el => el.href === link);
+  
+  if (linkElements.length === 0) return false;
+  
+  // For each occurrence of the link
+  for (const linkEl of linkElements) {
+    // Get parent elements up to 3 levels up
+    let currentEl = linkEl;
+    const contextElements = [currentEl];
+    
+    for (let i = 0; i < 3; i++) {
+      if (currentEl.parentElement) {
+        currentEl = currentEl.parentElement;
+        contextElements.push(currentEl);
+      }
+    }
+    
+    // Check if any of them contains game-related text
+    for (const el of contextElements) {
+      const text = el.innerText.toLowerCase();
+      if (text.includes('game') || 
+          text.includes('play') || 
+          text.includes('rosebud') ||
+          text.includes('vibe code') ||
+          text.includes('arcade')) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 // Legacy method for extracting links
@@ -984,6 +1101,82 @@ function loadNextRandomGame() {
   // Refresh the page to avoid CORS issues
   window.location.reload();
 }
+
+// Function to specifically monitor for t.co links in the console
+function setupConsoleTcoMonitor() {
+  // We can't directly access console logs, but we can inject a script
+  // to intercept console.log calls and look for t.co links
+  
+  const script = document.createElement('script');
+  script.textContent = `
+    // Intercept console.log to look for t.co links
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+      // Call the original console.log first
+      originalConsoleLog.apply(console, args);
+      
+      // Check if any arguments contain t.co links
+      const tcoLinks = [];
+      args.forEach(arg => {
+        if (typeof arg === 'string' && arg.includes('t.co/')) {
+          // Extract all t.co links from the string
+          const matches = arg.match(/https?:\\/\\/t\\.co\\/[a-zA-Z0-9]+/g);
+          if (matches) {
+            tcoLinks.push(...matches);
+          }
+        } 
+        else if (typeof arg === 'object' && arg !== null) {
+          // Try to convert to string to check for t.co links
+          try {
+            const str = JSON.stringify(arg);
+            if (str.includes('t.co/')) {
+              const matches = str.match(/https?:\\/\\/t\\.co\\/[a-zA-Z0-9]+/g);
+              if (matches) {
+                tcoLinks.push(...matches);
+              }
+            }
+          } catch(e) {}
+        }
+      });
+      
+      // If we found any t.co links, create a custom event to notify our content script
+      if (tcoLinks.length > 0) {
+        document.dispatchEvent(new CustomEvent('tcoLinksFound', { 
+          detail: { links: tcoLinks }
+        }));
+      }
+    };
+  `;
+  
+  // Add the script to the page
+  document.head.appendChild(script);
+  script.remove(); // Clean up after execution
+  
+  // Listen for the custom event from our injected script
+  document.addEventListener('tcoLinksFound', function(event) {
+    if (event.detail && event.detail.links) {
+      console.log('Content script received t.co links from console:', event.detail.links);
+      
+      // Store the links in localStorage
+      if (event.detail.links.length > 0) {
+        const latestLink = event.detail.links[0];
+        localStorage.setItem('lastTcoLink', latestLink);
+        localStorage.setItem('allTcoLinks', JSON.stringify(event.detail.links));
+        
+        // Send them to the background script
+        chrome.runtime.sendMessage({
+          action: 'newTcoLinkFound',
+          tcoLink: latestLink,
+          allLinks: event.detail.links
+        });
+      }
+    }
+  });
+}
+
+// Call setup function when initializing
+document.addEventListener('DOMContentLoaded', setupConsoleTcoMonitor);
+window.addEventListener('load', setupConsoleTcoMonitor);
 
 // Call init when page has loaded
 if (document.readyState === 'complete') {

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            width: 350px;
+            width: 450px;
             padding: 0;
             margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -250,7 +250,7 @@
         
         .game-frame {
             width: 100%;
-            height: 200px;
+            height: 300px;
             background-color: #000;
             border-radius: 4px;
             overflow: hidden;
@@ -264,6 +264,72 @@
             font-size: 12px;
             margin-top: 5px;
             display: none;
+        }
+        
+        .link-status {
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+            min-height: 16px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .game-indicator {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .game-indicator i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .game-indicator.success {
+            background-color: #5e17eb;
+            color: white;
+        }
+        
+        .game-indicator.warning {
+            background-color: #ff9d00;
+            color: white;
+        }
+        
+        .game-indicator.error {
+            background-color: #990000;
+            color: white;
+        }
+        
+        .game-indicator.loading {
+            background-color: #333;
+            color: white;
+        }
+        
+        .load-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -301,7 +367,7 @@
             </div>
         </div>
         
-        <a href="https://rosebud.ai/p/6b51a6f1-288b-4579-9b81-068d49c81b1f" target="_blank" class="button">
+        <a href="https://t.co/MSOku8Kfm2" target="_blank" class="button">
             <i class="fas fa-external-link-alt"></i> Play Full Game
         </a>
         
@@ -314,8 +380,9 @@
                 <input type="text" id="game-url-input" class="game-input" placeholder="Paste link..." />
                 <button id="load-game-btn" class="load-btn">Load</button>
             </div>
-            <a href="https://rosebud.ai/" target="_blank" class="create-link">Make your own game <i class="fas fa-external-link-alt"></i></a>
+            <div id="link-status" class="link-status"></div>
             <div id="error-message" class="error-message">Please enter a valid Rosebud.ai game link</div>
+            <a href="https://rosebud.ai/" target="_blank" class="create-link">Make your own game <i class="fas fa-external-link-alt"></i></a>
             <iframe id="popup-game-frame" class="game-frame" frameborder="0" allowfullscreen allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr"></iframe>
             <a href="https://rosebud.ai/" target="_blank" class="button create-game-btn">
                 <i class="fas fa-magic"></i> Vibe code your own game now
